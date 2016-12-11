@@ -15,7 +15,6 @@ package bgu.spl.a2;
  * @param <T> the result type
  */
 public class Deferred<T> {
-
     /**
      *
      * @return the resolved value if such exists (i.e., if this object has been
@@ -26,6 +25,7 @@ public class Deferred<T> {
     public T get() {
         //TODO: replace method body with real implementation
         throw new UnsupportedOperationException("Not Implemented Yet.");
+
     }
 
     /**
