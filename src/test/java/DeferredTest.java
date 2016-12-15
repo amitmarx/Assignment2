@@ -23,9 +23,9 @@ public class DeferredTest<T> {
         randomNum = new Random().nextInt();
     }
 
-    @Test
-    public void getValueIsNullOnInit(){
-        assertNull(deferredObj.get());
+    @Test(expected=Exception.class)
+    public void getFunctionThrowExceptionIfThereIsNoValue(){
+        deferredObj.get();
     }
 
     @Test
