@@ -1,5 +1,7 @@
 package bgu.spl.a2;
 
+import java.util.ArrayList;
+
 /**
  * this class represents a deferred result i.e., an object that eventually will
  * be resolved to hold a result of some operation, the class allows for getting
@@ -15,6 +17,8 @@ package bgu.spl.a2;
  * @param <T> the result type
  */
 public class Deferred<T> {
+    T result;
+    ArrayList<Runnable> callbacks = new ArrayList<>();
     /**
      *
      * @return the resolved value if such exists (i.e., if this object has been
@@ -23,9 +27,10 @@ public class Deferred<T> {
      * this object is not yet resolved
      */
     public T get() {
-        //TODO: replace method body with real implementation
-        throw new UnsupportedOperationException("Not Implemented Yet.");
-
+        if(isResolved()){
+            return result;
+        }
+        throw new IllegalStateException("The object is not yet resolved.");
     }
 
     /**
@@ -34,8 +39,7 @@ public class Deferred<T> {
      * {@link #resolve(java.lang.Object)} has been called on this object before.
      */
     public boolean isResolved() {
-        //TODO: replace method body with real implementation
-        throw new UnsupportedOperationException("Not Implemented Yet.");
+        return result!=null;
     }
 
     /**
@@ -51,8 +55,8 @@ public class Deferred<T> {
      * resolved
      */
     public void resolve(T value) {
-        //TODO: replace method body with real implementation
-        throw new UnsupportedOperationException("Not Implemented Yet.");
+        result = value;
+        invokeCallbacks();
     }
 
     /**
@@ -68,9 +72,18 @@ public class Deferred<T> {
      * @param callback the callback to be called when the deferred object is
      * resolved
      */
-    public void whenResolved(Runnable callback) {
-        //TODO: replace method body with real implementation
-        throw new UnsupportedOperationException("Not Implemented Yet.");
+    public synchronized void whenResolved(Runnable callback) {
+        callbacks.add(callback);
+        if(isResolved()){
+            invokeCallbacks();
+        }
+    }
+
+    private synchronized void invokeCallbacks(){
+        while (callbacks.size()>0){
+            callbacks.get(0).run();
+            callbacks.remove(0);
+        }
     }
 
 }

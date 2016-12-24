@@ -1,5 +1,7 @@
 package bgu.spl.a2;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
  * this class represents a single work stealing processor, it is
  * {@link Runnable} so it is suitable to be executed by threads.
@@ -15,6 +17,9 @@ public class Processor implements Runnable {
 
     private final WorkStealingThreadPool pool;
     private final int id;
+    public int getId(){
+        return id;
+    }
 
     /**
      * constructor for this class
@@ -39,8 +44,20 @@ public class Processor implements Runnable {
 
     @Override
     public void run() {
-        //TODO: replace method body with real implementation
-        throw new UnsupportedOperationException("Not Implemented Yet.");
+        while (!Thread.currentThread().isInterrupted()){
+            try {
+                Task<?> task = pool.getTask(id);
+                task.handle(this);
+            }
+            catch (InterruptedException e){
+                break;
+            }
+        }
+    }
+
+    public void addTaskToProcessorQueue(Task<?> task){
+        Logger.Log("Task:"+ task.id +" was inserted to queue: "+id);
+        pool.addTaskToSpecificQueue(task, id);
     }
 
 }

@@ -47,7 +47,7 @@ public class VersionMonitorTest {
             }
         });
         waitingThread.start();
-        for(int i=0;i<waitingVersions; i++){
+        for(int i=0;i<waitingVersions+1; i++){
             versionMonitor.inc();
         }
         waitingThread.join(5000);
@@ -71,7 +71,7 @@ public class VersionMonitorTest {
         for(int i=0;i<waitingVersions-1; i++){
             versionMonitor.inc();
         }
-        waitingThread.join(5000);
+        waitingThread.join(2000);
         assertEquals(isCalled[0],false);
     }
 }

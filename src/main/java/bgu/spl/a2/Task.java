@@ -1,6 +1,10 @@
 package bgu.spl.a2;
 
 import java.util.Collection;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.UUID;
 
 /**
  * an abstract class that represents a task that may be executed using the
@@ -14,6 +18,16 @@ import java.util.Collection;
  * @param <R> the task result type
  */
 public abstract class Task<R> {
+    //static ExecutorService waitingTasks = Executors.newFixedThreadPool(10);
+    Runnable callback;
+    Processor processor;
+    private Deferred<R> result;
+    public int id = counter.incrementAndGet();
+    static AtomicInteger counter = new AtomicInteger();
+
+    public Task() {
+        this.result = new Deferred<R>();
+    }
 
     /**
      * start handling the task - note that this method is protected, a handler
@@ -38,8 +52,14 @@ public abstract class Task<R> {
      * @param handler the handler that wants to handle the task
      */
     /*package*/ final void handle(Processor handler) {
-        //TODO: replace method body with real implementation
-        throw new UnsupportedOperationException("Not Implemented Yet.");
+        Logger.Log("Handled was called on: " +id+ " From processorID: "+handler.getId());
+        processor = handler;
+        if(callback != null){
+            callback.run();
+        }
+        else {
+            start();
+        }
     }
 
     /**
@@ -49,8 +69,9 @@ public abstract class Task<R> {
      * @param task the task to execute
      */
     protected final void spawn(Task<?>... task) {
-        //TODO: replace method body with real implementation
-        throw new UnsupportedOperationException("Not Implemented Yet.");
+        for(Task<?> t : task){
+            processor.addTaskToProcessorQueue(t);
+        }
     }
 
     /**
@@ -63,9 +84,18 @@ public abstract class Task<R> {
      * @param tasks
      * @param callback the callback to execute once all the results are resolved
      */
-    protected final void whenResolved(Collection<? extends Task<?>> tasks, Runnable callback) {
-        //TODO: replace method body with real implementation
-        throw new UnsupportedOperationException("Not Implemented Yet.");
+    protected synchronized final void whenResolved(Collection<? extends Task<?>> tasks, Runnable callback) {
+        Task<?> currentTask = this;
+        AtomicInteger counter = new AtomicInteger(0);
+        for (Task<?> task : tasks) {
+            task.getResult().whenResolved(() -> subTaskIsComplete(counter));
+        }
+        new Thread(()->
+        {
+            waitForSubTasks(counter, tasks);
+            currentTask.callback = callback;
+            processor.addTaskToProcessorQueue(currentTask);
+        }).start();
     }
 
     /**
@@ -75,16 +105,31 @@ public abstract class Task<R> {
      * @param result - the task calculated result
      */
     protected final void complete(R result) {
-        //TODO: replace method body with real implementation
-        throw new UnsupportedOperationException("Not Implemented Yet.");
+        this.result.resolve(result);
     }
 
     /**
      * @return this task deferred result
      */
     public final Deferred<R> getResult() {
-        //TODO: replace method body with real implementation
-        throw new UnsupportedOperationException("Not Implemented Yet.");
+        return result;
+    }
+
+    private synchronized void waitForSubTasks(AtomicInteger counter, Collection<? extends Task<?>> tasks) {
+        while (counter.get() < tasks.size()) {
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                //TODO handle
+            }
+            Logger.Log(id + " Expecting "+tasks.size() + "and have "+counter.get());
+        }
+    }
+
+    private synchronized void subTaskIsComplete(AtomicInteger counter){
+        counter.incrementAndGet();
+        notifyAll();
+        Logger.Log(id + "Was notified");
     }
 
 }
