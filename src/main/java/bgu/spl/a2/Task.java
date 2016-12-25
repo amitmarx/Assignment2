@@ -1,10 +1,7 @@
 package bgu.spl.a2;
 
 import java.util.Collection;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.UUID;
 
 /**
  * an abstract class that represents a task that may be executed using the
@@ -18,7 +15,6 @@ import java.util.UUID;
  * @param <R> the task result type
  */
 public abstract class Task<R> {
-    //static ExecutorService waitingTasks = Executors.newFixedThreadPool(10);
     Runnable callback;
     Processor processor;
     private Deferred<R> result;
@@ -88,14 +84,16 @@ public abstract class Task<R> {
         Task<?> currentTask = this;
         AtomicInteger counter = new AtomicInteger(0);
         for (Task<?> task : tasks) {
-            task.getResult().whenResolved(() -> subTaskIsComplete(counter));
+            task.getResult().whenResolved(() ->
+                    {
+                        int numOfTasksCompleted = subTaskIsComplete(counter);
+                        if(numOfTasksCompleted == tasks.size()) {
+                            currentTask.callback = callback;
+                            processor.addTaskToProcessorQueue(currentTask);
+                        }
+                    }
+                    );
         }
-        new Thread(()->
-        {
-            waitForSubTasks(counter, tasks);
-            currentTask.callback = callback;
-            processor.addTaskToProcessorQueue(currentTask);
-        }).start();
     }
 
     /**
@@ -115,21 +113,9 @@ public abstract class Task<R> {
         return result;
     }
 
-    private synchronized void waitForSubTasks(AtomicInteger counter, Collection<? extends Task<?>> tasks) {
-        while (counter.get() < tasks.size()) {
-            try {
-                wait();
-            } catch (InterruptedException e) {
-                //TODO handle
-            }
-            Logger.Log(id + " Expecting "+tasks.size() + "and have "+counter.get());
-        }
-    }
-
-    private synchronized void subTaskIsComplete(AtomicInteger counter){
-        counter.incrementAndGet();
-        notifyAll();
+    private synchronized int subTaskIsComplete(AtomicInteger counter){
+        int result = counter.incrementAndGet();
         Logger.Log(id + "Was notified");
+        return result;
     }
-
 }

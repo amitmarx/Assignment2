@@ -107,6 +107,7 @@ public class WorkStealingThreadPool {
             tryStealingTasks(processorId);
             task = queue.pollFirst();
         }
+        throwInterruptedIfNeeded();
         return task;
     }
 
@@ -135,6 +136,10 @@ public class WorkStealingThreadPool {
             }
             i++;
         }
+        throwInterruptedIfNeeded();
+    }
+
+    private void throwInterruptedIfNeeded() throws InterruptedException {
         if(Thread.currentThread().isInterrupted()){
             throw new InterruptedException();
         }
@@ -151,9 +156,7 @@ public class WorkStealingThreadPool {
                 }
             }
         }
-        if(Thread.currentThread().isInterrupted()){
-            throw new InterruptedException();
-        }
+        throwInterruptedIfNeeded();
     }
 
     private void moveKTasks(Deque<Task<?>> source, Deque<Task<?>> dest, int numOfTasks) {
