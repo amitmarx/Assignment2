@@ -7,6 +7,8 @@ package bgu.spl.a2.sim;
 
 import bgu.spl.a2.WorkStealingThreadPool;
 
+import java.util.concurrent.ConcurrentLinkedQueue;
+
 
 /**
  * A class describing the simulator for part 2 of the assignment
