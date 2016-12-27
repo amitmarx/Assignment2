@@ -50,13 +50,13 @@ public class Product {
 	/**
 	* @return Returns all parts of this product as a List of Products
 	*/
-    public List<Product> getParts();
+    public List<Product> getParts(){return null;}
 
 	/**
 	* Add a new part to the product
 	* @param p - part to be added as a Product object
 	*/
-    public void addPart(Product p);
+    public void addPart(Product p){}
 
 
 }
