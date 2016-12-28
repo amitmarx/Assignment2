@@ -82,6 +82,12 @@ public abstract class Task<R> {
      */
     protected synchronized final void whenResolved(Collection<? extends Task<?>> tasks, Runnable callback) {
         Task<?> currentTask = this;
+        if(tasks==null || tasks.size()==0)
+        {
+            this.callback = callback;
+            processor.addTaskToProcessorQueue(currentTask);
+            return;
+        }
         AtomicInteger counter = new AtomicInteger(0);
         for (Task<?> task : tasks) {
             task.getResult().whenResolved(() ->

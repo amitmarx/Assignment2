@@ -5,19 +5,25 @@ import java.util.List;
 /**
  * A class that represents a product produced during the simulation.
  */
-public class Product {
+public class Product implements java.io.Serializable{
 
-	int startId;
+	long startId;
 	String name;
 	Long finalId;
+	List<Product> parts;
 	/**
 	* Constructor 
 	* @param startId - Product start id
 	* @param name - Product name
 	*/
     public Product(long startId, String name){
-    	startId = startId;
-    	name = name;
+		this.startId = startId;
+		this.name = name;
+	}
+	public Product(long startId, String name,List<Product> parts){
+		this.startId = startId;
+		this.name = name;
+		this.parts = parts;
 	}
 
 	/**
@@ -39,18 +45,16 @@ public class Product {
 	* final ID is the ID the product received as the sum of all UseOn(); 
 	*/
     public long getFinalId(){
-		if(finalId==null){
-			for(Product p : getParts()){
-
-			}
-		}
 		return finalId;
+	}
+	public void setFinalId(long finalId){
+		this.finalId = finalId;
 	}
 
 	/**
 	* @return Returns all parts of this product as a List of Products
 	*/
-    public List<Product> getParts(){return null;}
+    public List<Product> getParts(){return parts;}
 
 	/**
 	* Add a new part to the product

@@ -5,12 +5,20 @@
  */
 package bgu.spl.a2.sim;
 
+import bgu.spl.a2.Deferred;
+import bgu.spl.a2.Logger;
+import bgu.spl.a2.VersionMonitor;
 import bgu.spl.a2.WorkStealingThreadPool;
+import bgu.spl.a2.sim.conf.ConfigOrder;
+import bgu.spl.a2.sim.conf.ConfigTool;
 import bgu.spl.a2.sim.conf.JsonConfiguration;
+import bgu.spl.a2.sim.tools.ToolFactory;
 import com.google.gson.Gson;
-import com.oracle.javafx.jmx.json.JSONReader;
 
+import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.ObjectOutputStream;
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 
@@ -18,12 +26,63 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * A class describing the simulator for part 2 of the assignment
  */
 public class Simulator {
+    private static WorkStealingThreadPool workStealingThreadPool;
+    private static JsonConfiguration config;
+    private static Warehouse warehouse;
     /**
      * Begin the simulation
      * Should not be called before attachWorkStealingThreadPool()
      */
     public static ConcurrentLinkedQueue<Product> start() {
-        return null;
+        ConcurrentLinkedQueue<Product> result = new ConcurrentLinkedQueue<>();
+        warehouse = new Warehouse(workStealingThreadPool);
+        buildAllTools();
+        warehouse.setPlans(config.plans);
+        for(List<ConfigOrder> wave: config.waves){
+            handleWave(wave,result);
+        }
+        return result;
+    }
+
+    private static void handleWave(List<ConfigOrder> wave, ConcurrentLinkedQueue<Product> result) {
+        int totalQuantities = getTotalQuantities(wave);
+        VersionMonitor counter = new VersionMonitor();
+
+        for(ConfigOrder order : wave){
+            warehouse.setStartIds(order.getProductName(),order.getStartId());
+            for(int i=0; i<order.getQty();i++){
+                Deferred<Product> product =  warehouse.Manufacture(order.getProductName());
+                product.whenResolved(()-> {
+                    result.add(product.get());
+                    counter.inc();
+                }
+                );
+            }
+        }
+
+        try {
+            counter.await(totalQuantities-1);
+        }
+        catch (Exception e){
+
+        }
+    }
+
+    private static int getTotalQuantities(List<ConfigOrder> wave) {
+        int result = 0;
+        for(ConfigOrder order : wave){
+            result +=order.getQty();
+        }
+        return result;
+    }
+
+    private static void buildAllTools() {
+        for(ConfigTool tool: config.tools){
+            warehouse.addTool(
+                    ToolFactory.create(tool.getName()),
+                    tool.getQty()
+            );
+        }
     }
 
     /**
@@ -32,22 +91,32 @@ public class Simulator {
      * @param myWorkStealingThreadPool - the WorkStealingThreadPool which will be used by the simulator
      */
     public static void attachWorkStealingThreadPool(WorkStealingThreadPool myWorkStealingThreadPool) {
+        workStealingThreadPool = myWorkStealingThreadPool;
     }
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
+        setConfig(args[0]);
+        attachWorkStealingThreadPool(
+                new WorkStealingThreadPool(config.threads)
+        );
+        ConcurrentLinkedQueue<Product> products = start();
+        writeProductsToFile("result.ser", products);
+    }
+
+    private static void setConfig(String path){
         Gson jsonSer = new Gson();
-        A a = new A(9);
-        a.a = 9;
-        String s;
-        A b;
-        JsonConfiguration conf;
-        String json = readStream(new FileReader("/Users/amitm/dev/spl/Assignment2/src/main/java/bgu/spl/a2/sim/conf/config.json"));
-        conf = jsonSer.fromJson(json, JsonConfiguration.class);
-//			s = jsonSer.toJson(a);
-//			b = jsonSer.fromJson(s,A.class);
+        String json;
+        try {
+            json = readStream(new FileReader(path));
+        }
+        catch (Exception e){
+            System.out.println("Could not find configuration file.");
+            return;
+        }
+        Simulator.config = jsonSer.fromJson(json, JsonConfiguration.class);
     }
 
-    public static String readStream(FileReader r) throws Exception {
+    private static String readStream(FileReader r) throws Exception {
         StringBuilder sb = new StringBuilder(512);
 
         int c = 0;
@@ -57,18 +126,14 @@ public class Simulator {
         return sb.toString();
     }
 
-    public static class A {
-        private int a;
-
-        public A(int a) {
-            this.a = a;
+    private static void writeProductsToFile(String path, ConcurrentLinkedQueue<Product> products){
+        try {
+            FileOutputStream fout = new FileOutputStream(path);
+            ObjectOutputStream oos = new ObjectOutputStream(fout);
+            oos.writeObject(products);
         }
-
-        public A() {
-        }
-
-        public int getA() {
-            return a;
+        catch (Exception e){
+            Logger.Log(e.toString());
         }
     }
 }

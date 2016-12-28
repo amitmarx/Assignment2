@@ -1,5 +1,5 @@
 {
-  "threads": 4,
+  "threads": 1,
   "tools": [
     {
       "tool": "gs-driver",
@@ -63,7 +63,7 @@
     [
       {
         "product": "yphone30",
-        "qty": 100,
+        "qty": 1,
         "startId": 50123450
       }
     ]

@@ -25,6 +25,8 @@ public class GCDScrewdriver extends ToolApplier {
 
     @Override
     public String getType() {
-        return "GCDScrewdriver";
+        return "gs-driver";
     }
+
+
 }

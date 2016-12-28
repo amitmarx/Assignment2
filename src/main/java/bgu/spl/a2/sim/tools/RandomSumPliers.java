@@ -20,6 +20,6 @@ public class RandomSumPliers extends ToolApplier {
 
     @Override
     public String getType() {
-        return "RandomSumPliers";
+        return "rs-pliers";
     }
 }

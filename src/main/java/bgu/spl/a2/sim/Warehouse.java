@@ -1,5 +1,8 @@
 package bgu.spl.a2.sim;
 
+import bgu.spl.a2.Task;
+import bgu.spl.a2.WorkStealingThreadPool;
+import bgu.spl.a2.sim.tasks.ManufactureTask;
 import bgu.spl.a2.sim.tools.Tool;
 import bgu.spl.a2.sim.conf.ManufactoringPlan;
 import bgu.spl.a2.Deferred;
@@ -10,6 +13,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * A class representing the warehouse in your simulation
@@ -23,15 +27,26 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class Warehouse {
 
 	Map<String,Pair<Tool,Integer>> tools;
-	Map<String,ManufactoringPlan> plans;
+	List<ManufactoringPlan> plans;
 	Map<Tool,ConcurrentLinkedQueue<Deferred<Tool>>> waitingList;
+	WorkStealingThreadPool taskPool;
+	Map<String,AtomicLong> IdByProduct;
 	/**
 	* Constructor
 	*/
-    public Warehouse(){
-    	waitingList = new HashMap<>();
-		tools = new HashMap<>();
-		plans = new HashMap<>();
+    public Warehouse(WorkStealingThreadPool taskPool){
+    	this.waitingList = new HashMap<>();
+		this.tools = new HashMap<>();
+		this.IdByProduct = new HashMap<>();
+		this.taskPool = taskPool;
+		this.taskPool.start();
+	}
+	public void setPlans(List<ManufactoringPlan> plans){
+    	this.plans = plans;
+	}
+
+	public void setStartIds(String product,long id){
+		IdByProduct.put(product,new AtomicLong(id-1));
 	}
 
 	/**
@@ -70,14 +85,19 @@ public class Warehouse {
 		}
 	}
 
-	
 	/**
 	* Getter for ManufactoringPlans
 	* @param product - a string with the product name for which a ManufactoringPlan is desired
 	* @return A ManufactoringPlan for product
 	*/
     public ManufactoringPlan getPlan(String product){
-    	return plans.get(product);
+    	for(ManufactoringPlan p: plans){
+    		if(p.getProductName().equals(product)){
+    			return p;
+			}
+		}
+		return null;
+
 	}
 	
 	/**
@@ -85,7 +105,18 @@ public class Warehouse {
 	* @param plan - a ManufactoringPlan to be stored
 	*/
     public void addPlan(ManufactoringPlan plan){
-    	plans.put(plan.getProductName(),plan);
+    	plans.add(plan);
+	}
+
+	public Deferred<Product> Manufacture(String product){
+		ManufactoringPlan plan = getPlan(product);
+		Task<Product> task =new ManufactureTask(plan,this);
+		taskPool.submit(task);
+		return task.getResult();
+	}
+
+	public long increaseIdAndGet(String productName){
+		return IdByProduct.get(productName).incrementAndGet();
 	}
     
 	/**
@@ -94,21 +125,20 @@ public class Warehouse {
 	* @param qty - amount of tools of type tool to be stored
 	*/
     public synchronized void addTool(Tool tool, int qty){
-		Pair<Tool,Integer> toolInToolbox = tools.get(InstanceToClassString(tool));
-		if(toolInToolbox==null){
-			toolInToolbox = new Pair<>(tool,qty);
+		Pair<Tool,Integer> toolInToolbox = tools.get(tool.getType());
+		int oldQty=0;
+
+		if(toolInToolbox!=null){
+			oldQty = toolInToolbox.getValue();
 		}
-		else {
-			tools.put(InstanceToClassString(tool),
-					new Pair<Tool,Integer>(tool,toolInToolbox.getValue()+qty));
-		}
+
+		tools.put(tool.getType(),
+					new Pair<Tool,Integer>(tool,oldQty+qty));
+
 		if(!waitingList.containsKey(tool)){
 			waitingList.put(tool,new ConcurrentLinkedQueue<>());
 		}
 
-	}
-	private String InstanceToClassString(Object o){
-    	return o.getClass().getName().toString();
 	}
 
 }
