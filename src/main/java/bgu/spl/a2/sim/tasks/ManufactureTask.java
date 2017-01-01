@@ -76,7 +76,7 @@ public class ManufactureTask extends Task<Product>{
                     {
                         counter.incrementAndGet();
                         finalId.addAndGet(tool.get().useOn(finalProduct));
-                        wareHouse.releaseTool(tool.get());
+                        spawn(new ReleaseToolTask(wareHouse, tool.get()));
 
                         if(counter.get()==plan.getTools().length){
                             finalProduct.setFinalId(finalId.get());
