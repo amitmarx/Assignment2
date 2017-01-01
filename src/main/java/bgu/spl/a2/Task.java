@@ -80,7 +80,7 @@ public abstract class Task<R> {
      * @param tasks
      * @param callback the callback to execute once all the results are resolved
      */
-    protected synchronized final void whenResolved(Collection<? extends Task<?>> tasks, Runnable callback) {
+    protected final void whenResolved(Collection<? extends Task<?>> tasks, Runnable callback) {
         Task<?> currentTask = this;
         if(tasks==null || tasks.size()==0)
         {
@@ -119,7 +119,7 @@ public abstract class Task<R> {
         return result;
     }
 
-    private synchronized int subTaskIsComplete(AtomicInteger counter){
+    private int subTaskIsComplete(AtomicInteger counter){
         int result = counter.incrementAndGet();
         Logger.Log(id + "Was notified");
         return result;

@@ -32,24 +32,9 @@ public class VersionMonitor {
         notifyAll();
     }
 
-    public synchronized boolean incIfEquals(int version) {
-        if(counter.get()==version) {
-            inc();
-            return true;
-        }
-        return false;
-
-
-    }
-
     public synchronized void await(int version) throws InterruptedException {
         while (counter.get()<=version){
             wait();
-        }
-    }
-    public synchronized void awaitIfOddVersion() throws InterruptedException {
-        if(counter.get()%2==1){
-            await(counter.get());
         }
     }
 }
