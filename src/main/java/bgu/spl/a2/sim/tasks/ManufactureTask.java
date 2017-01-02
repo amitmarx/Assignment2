@@ -21,11 +21,6 @@ public class ManufactureTask extends Task<Product>{
     List<Product> parts;
     long startId;
     Boolean isPart = false;
-    public ManufactureTask(ManufactoringPlan plan, Warehouse wareHouse) {
-        this.plan = plan;
-        this.wareHouse = wareHouse;
-        this.parts = new ArrayList<>();
-    }
     public ManufactureTask(ManufactoringPlan plan, Warehouse wareHouse,long startId) {
         this.plan = plan;
         this.wareHouse = wareHouse;

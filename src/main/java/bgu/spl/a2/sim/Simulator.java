@@ -18,6 +18,7 @@ import com.google.gson.Gson;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.ObjectOutputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -48,17 +49,14 @@ public class Simulator {
     private static void handleWave(List<ConfigOrder> wave, ConcurrentLinkedQueue<Product> result) {
         int totalQuantities = getTotalQuantities(wave);
         VersionMonitor counter = new VersionMonitor();
-        ConcurrentLinkedQueue<Deferred<Product>> deferredProducts = new ConcurrentLinkedQueue<>();
+        List<Deferred<Product>> deferredProducts = new ArrayList<>();
 
         for (ConfigOrder order : wave) {
             warehouse.setStartIds(order.getProductName(), order.getStartId());
             for (int i = 0; i < order.getQty(); i++) {
                 Deferred<Product> product = warehouse.Manufacture(order.getProductName());
                 deferredProducts.add(product);
-                product.whenResolved(() -> {
-                            counter.inc();
-                        }
-                );
+                product.whenResolved(() -> counter.inc());
             }
         }
         try {
